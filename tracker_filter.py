@@ -52,3 +52,37 @@ def tracker_filter(packet):
         return True, output
     except:
         return False, {}
+
+
+def print_output(out, port="PORT"):
+    try:
+        if ('y' not in out.keys()):
+            return 'Unable to parse output: no y key found.'
+        y_str = 'Unknown'
+        transaction = ''
+        action = ''
+        result = ' transaction=%s' % out['t'].encode('hex')
+        y = out['y']
+        if y == "q":
+            y_str = "Query"
+            action = out[y]
+        elif y == "r":
+            y_str = "Response"
+
+        elif y == "e":
+            y_str = "Error"
+            result = out[y][1]
+
+        if action == "announce_peer":
+            if (out['a']['implied_port'] == 1):
+                result+=" port=%s" % port
+            else:
+                result+=" port=%s" % out['a']['port']
+
+        if action == "announce_peer" or action =="get_peers":
+            hash = out['a']['info_hash']
+            result+=" info_hash=%s" % hash.encode('hex')
+        return "%s %s%s" % (y_str, action, result)
+    except:
+        return out
+

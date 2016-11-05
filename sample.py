@@ -1,5 +1,6 @@
 import dpkt
 import socket
+import binascii
 
 def mac_addr(address):
     """Convert a MAC address to a readable/printable string
@@ -27,7 +28,7 @@ def inet_to_str(inet):
         return socket.inet_ntop(socket.AF_INET6, inet)
 
 
-f = open("/home/goncalo/out.pcap")
+f = open("/root/360BitScoping/pcaps/small_torrent.pcap")
 pcap = dpkt.pcap.Reader(f)
 
 # For each packet in the pcap process the contents
@@ -55,16 +56,21 @@ for timestamp, buf in pcap:
     fragment_offset = ip.off & dpkt.ip.IP_OFFMASK
     pkt = ip.data
     if isinstance(pkt, dpkt.tcp.TCP):
-        print "TCP"
-    elif isinstance(pkt, dpkt.udp.UDP):
+        #print "TCP"
+        payload = pkt.data
+        trying = binascii.hexlify(payload)
+        conversion = ""
+        if "13426974546f7272656e742070726f746f636f6c" in trying :
+            print 'IP: %s -> %s' % ((inet_to_str(ip.src), inet_to_str(ip.dst)))
+            print trying
+    '''elif isinstance(pkt, dpkt.udp.UDP):
         print "UDP"
-        
+
     try:
         print pkt.sport
     except AttributeError:
         print "error"
-    # Print out the info
     print 'IP: %s -> %s   (len=%d ttl=%d DF=%d MF=%d offset=%d)\n' % \
           (inet_to_str(ip.src), inet_to_str(ip.dst), ip.len, ip.ttl, do_not_fragment, more_fragments, fragment_offset)
-
+'''
 f.close()

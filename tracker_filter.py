@@ -78,6 +78,10 @@ def print_output(out, port="PORT"):
                 result+=" port=%s" % port
             else:
                 result+=" port=%s" % out['a']['port']
+	    if 'name' in out['a'].keys():
+	   	result+=" name=%s" % out['a']['name']
+	    else:
+		result+= "name=Unknown"
 
         if action == "announce_peer" or action =="get_peers":
             hash = out['a']['info_hash']

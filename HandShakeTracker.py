@@ -84,7 +84,7 @@ def decodeRegularClient(client_str):
     clientVersion = client_str[2:]
     mappedID = mapping[clientID]
     if mappedID != "":
-        translated = mapping[clientID] + " " + clientVersion[0] + "." + clientVersion[1] + "." + clientVersion[2]
+        translated = mapping[clientID] + " " + str(int(clientVersion[0], 16)) + "." + str(int(clientVersion[1],16)) + "." + str(int(clientVersion[2],16))
     return translated
 
 
@@ -92,12 +92,13 @@ def translateTorrentClient(client):
     if client[0] == "-" and client[7] == "-":
         client = client[1:7]
         readable_client = decodeRegularClient(client)
+        return readable_client
     else:
         return "Custom Shad0w BitTorrent Client Implementation"
 
 
 
-f = open("/root/360BitScoping/pcaps/small_torrent.pcap")
+f = open("/root/360BitScoping/pcaps/in_the_middle.pcap")
 pcap = dpkt.pcap.Reader(f)
 
 for timestamp, buf in pcap:

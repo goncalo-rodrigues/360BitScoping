@@ -97,7 +97,7 @@ def translateTorrentClient(client):
         return "Custom Shad0w BitTorrent Client Implementation"
 
 
-def HandhakeFilter(pkt)
+def HandhakeFilter(pkt):
     if isinstance(pkt, dpkt.tcp.TCP):
         payload = pkt.data
         #Hexlify the payload for easier info carving
@@ -106,8 +106,8 @@ def HandhakeFilter(pkt)
             #Scrap out the bytes that identify the Protocol (20 bytes so 40 hexcharaters in the hexstring)
             hexlified_payload = hexlified_payload[40:]
             #BitTorrent Detected Gather Source IP and Destination IP
-            source_ip = inet_to_str(ip.src)
-            dest_ip = inet_to_str(ip.dst)
+            #source_ip = inet_to_str(ip.src)
+            #dest_ip = inet_to_str(ip.dst)
             #remove extension Bytes (8bytes so 16 hexcharactes in the hexstring)
             hexlified_payload = hexlified_payload[16:]
             signature = hexlified_payload[0:40]
@@ -116,6 +116,6 @@ def HandhakeFilter(pkt)
             #read the client in ascii (1st 8bytes 16hexcharacters from the peerid field)
             torrentclient = str(binascii.unhexlify(hexlified_payload[0:16]))
 
-            return true, {'signature' : signature, 'client', torrentclient}
-    else:
-        return false, {}
+            return True, {'signature' : signature, 'client': torrentclient}
+    
+    return False, {}

@@ -97,23 +97,7 @@ def translateTorrentClient(client):
         return "Custom Shad0w BitTorrent Client Implementation"
 
 
-
-f = open("/root/360BitScoping/pcaps/in_the_middle.pcap")
-pcap = dpkt.pcap.Reader(f)
-
-for timestamp, buf in pcap:
-
-    eth = dpkt.ethernet.Ethernet(buf)
-
-    if not isinstance(eth.data, dpkt.ip.IP):
-        continue
-    ip = eth.data
-
-    # Pull out fragment information (flags and offset all packed into off field, so use bitmasks)
-    do_not_fragment = bool(ip.off & dpkt.ip.IP_DF)
-    more_fragments = bool(ip.off & dpkt.ip.IP_MF)
-    fragment_offset = ip.off & dpkt.ip.IP_OFFMASK
-    pkt = ip.data
+def HandhakeFilter(pkt)
     if isinstance(pkt, dpkt.tcp.TCP):
         payload = pkt.data
         #Hexlify the payload for easier info carving
@@ -132,6 +116,6 @@ for timestamp, buf in pcap:
             #read the client in ascii (1st 8bytes 16hexcharacters from the peerid field)
             torrentclient = str(binascii.unhexlify(hexlified_payload[0:16]))
 
-            print 'Source IP: %s\nDestinationIP: %s\nSignature: %s\nTorrentClient: %s\n' % \
-                (inet_to_str(ip.src), inet_to_str(ip.dst), signature, translateTorrentClient(torrentclient))
-f.close()
+            return true, {'signature' : signature, 'client', torrentclient}
+    else:
+        return false, {}

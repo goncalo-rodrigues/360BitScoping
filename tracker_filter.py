@@ -44,7 +44,7 @@ def bdecode(string):
 
 # Receives a packet and returns a boolean (true if it a packet matching the tracker protocol) and output (dictionary sent in the packet)
 def tracker_filter(packet):
-    data = str(packet.data)
+    data = str(packet.payload)
     if (len(data) == 0 or data[0] not in ('d', 'l', 's')):
         return False, {}
     try:

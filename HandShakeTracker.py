@@ -116,6 +116,6 @@ def HandhakeFilter(pkt):
             #read the client in ascii (1st 8bytes 16hexcharacters from the peerid field)
             torrentclient = str(binascii.unhexlify(hexlified_payload[0:16]))
 
-            return True, {'signature' : signature, 'client': torrentclient}
-    
+            return True, {'signature' : signature, 'client': translateTorrentClient(torrentclient)}
+
     return False, {}

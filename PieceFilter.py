@@ -12,8 +12,8 @@ def decimal(hex):
 # 1 byte = 2 hex chars
 
 def PieceFilter(packet):
-    if packet.name == "TCP":
-        payload = str(packet.payload)
+    if isinstance(packet, dpkt.tcp.TCP):
+        payload = str(packet.data)
         hex_payload = binascii.hexlify(payload)
         message_type = hex_payload[8:10]
 
@@ -25,9 +25,8 @@ def PieceFilter(packet):
             """
             piece_data = hex_payload[26:]
 
-            print len(piece_data)/2
 
-            #return True, {'piece': len(piece_data)/2}
+            return True, {'piece': len(piece_data)/2}
 
 
     return False, {}

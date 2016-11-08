@@ -4,6 +4,8 @@ import sys, getopt
 from scapy.all import *
 from tracker_filter import tracker_filter, print_output
 from HandShakeTracker import HandhakeFilter
+from PieceFilter import PieceFilter
+
 start_time = 0
 
 def inet_to_str(inet):
@@ -116,7 +118,8 @@ def get_all_streams(pcap):
 
 
 def is_torrent(pkt):
-    filters = [tracker_filter, HandhakeFilter]
+    #filters = [tracker_filter, HandhakeFilter, PieceFilter]
+    filters = [PieceFilter]
     for filt in filters:
         torrent, output = filt(pkt)
         if torrent:

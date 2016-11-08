@@ -98,8 +98,8 @@ def translateTorrentClient(client):
 
 
 def HandhakeFilter(pkt):
-    if pkt.name == "TCP":
-        payload = str(pkt.payload)
+    if isinstance(pkt, dpkt.tcp.TCP):
+        payload = str(pkt.data)
         #Hexlify the payload for easier info carving
         hexlified_payload = binascii.hexlify(payload)
         if isBitTorrentHandshake(hexlified_payload):

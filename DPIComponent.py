@@ -118,8 +118,7 @@ def get_all_streams(pcap):
 
 
 def is_torrent(pkt):
-    #filters = [tracker_filter, HandhakeFilter, PieceFilter]
-    filters = [PieceFilter]
+    filters = [tracker_filter, HandhakeFilter, PieceFilter]
     for filt in filters:
         torrent, output = filt(pkt)
         if torrent:

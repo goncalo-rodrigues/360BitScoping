@@ -149,3 +149,12 @@ class StreamId:
 
     def __hash__(self):
         return self.entities.__hash__() + self.protocol.__hash__()
+
+    def getSrcIp(self):
+        return self.entities[0][0]
+    def getSrcPort(self):
+        return self.entities[0][1]
+    def getDstIp(self):
+        return self.entities[1][0]
+    def getDstPort(self):
+        return self.entities[0][1]

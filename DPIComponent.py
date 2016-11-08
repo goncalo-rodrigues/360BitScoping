@@ -23,12 +23,59 @@ def inet_to_str(inet):
 
 def DPIComponent(filepath, out_pcap=None):
     global start_time
-    torrent_streams = {}
     start_time = time.time()
     print "%.3fs: starting read" % (time.time() - start_time)
     f = open(filepath)
     pcap = dpkt.pcap.Reader(f)
 
+    torrent_streams = get_all_streams(pcap)
+
+    f.seek(0)
+    pcap = dpkt.pcap.Reader(f)
+
+    if out_pcap is not None:
+        iterate_over_streams(pcap, torrent_streams, lambda s, t, b: out_pcap.writepkt(b, t))
+
+    print "%.3fs: done filtering" % (time.time() - start_time)
+    print "streams: %s" % str(torrent_streams.keys())
+    f.close()
+
+# apply_function : (StreamId s_id) x (int timestamp) x (byte[] buf) => void
+def iterate_over_streams(pcap, streams, apply_function):
+    for timestamp, buf in pcap:
+        eth = dpkt.ethernet.Ethernet(buf)
+        if not isinstance(eth.data, dpkt.ip.IP):
+            continue
+        ip = eth.data
+        pkt = ip.data
+
+        if pkt is None:
+            continue
+
+        protocol_str = "UNK"
+        if isinstance(pkt, dpkt.tcp.TCP):
+            protocol_str = "TCP"
+        elif isinstance(pkt, dpkt.udp.UDP):
+            protocol_str = "UDP"
+        else:
+            continue
+
+        sport, dport = "unk_port", "unk_port"
+        try:
+            sport = pkt.sport
+            dport = pkt.dport
+        except AttributeError:
+            pass
+
+        stream_id = StreamId((ip.src, sport), (ip.dst, dport), protocol_str)
+        # Already identified this stream
+        if streams.has_key(stream_id):
+            apply_function(stream_id, timestamp, buf)
+
+
+
+def get_all_streams(pcap):
+    result = {}
     # For each packet in the pcap process the contents
     for timestamp, buf in pcap:
         eth = dpkt.ethernet.Ethernet(buf)
@@ -56,18 +103,16 @@ def DPIComponent(filepath, out_pcap=None):
             pass
 
         stream_id = StreamId((ip.src, sport), (ip.dst, dport), protocol_str)
-
         # Already identified this stream
-        if stream_id in torrent_streams.keys():
+        if result.has_key(stream_id):
             continue
 
         success, output = is_torrent(pkt)
         if not success:
             continue
 
-        torrent_streams[stream_id] = output
-        print "Identified: %s" % str(stream_id)
-    print "%.3fs: done filtering" % (time.time() - start_time)
+        result[stream_id] = output
+    return result
 
 
 def is_torrent(pkt):
@@ -82,21 +127,22 @@ def is_torrent(pkt):
 class StreamId:
 
     def __init__(self, srctuple, dsttuple, protocol):
-        self.entities = (srctuple, dsttuple)
+        self.entities = ((inet_to_str(srctuple[0]), srctuple[1]),
+                         (inet_to_str(dsttuple[0]), dsttuple[1]))
         self.protocol = protocol
 
     def __repr__(self):
         return '%s: %s:%s -> %s:%s' % \
                       (self.protocol,
-                       inet_to_str(self.entities[0][0]),
+                       self.entities[0][0],
                        self.entities[0][1],
-                       inet_to_str(self.entities[1][0]),
+                       self.entities[1][0],
                        self.entities[1][1])
 
     def __eq__(self, other):
         if not isinstance(other, StreamId):
             return False
-        self.entities == other.entities and \
+        return self.entities == other.entities and \
         self.protocol == other.protocol
 
 

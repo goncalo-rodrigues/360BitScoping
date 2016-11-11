@@ -35,15 +35,51 @@ def DPIComponent(filepath, out_pcap=None):
     f.seek(0)
     pcap = dpkt.pcap.Reader(f)
 
-    if out_pcap is not None:
-        iterate_over_streams(pcap, torrent_streams, lambda s, t, b: out_pcap.writepkt(b, t))
+    pkt_size_lengths = {}
+    buf_size_lengths = {}
 
+    def apply_function(stream_id,ts,buffer):
+        if out_pcap is not None:
+            out_pcap.writepkt(buffer, ts)
+
+    def feature1(stream_id, ts, buffer):
+        if buf_size_lengths.has_key(stream_id):
+            buf_size_lengths[stream_id] += len(buffer)
+        else:
+            buf_size_lengths[stream_id] = len(buffer)
+
+    def feature2(stream_id, ts, buffer):
+        totalsize = len(dpkt.ethernet.Ethernet(buffer).data.data.data)
+
+        if pkt_size_lengths.has_key(stream_id):
+            pkt_size_lengths[stream_id] += totalsize
+        else:
+            pkt_size_lengths[stream_id] = totalsize
+
+
+    iterate_over_streams(pcap, torrent_streams, apply_function, feature1, feature2)
+
+    print merge_features(pkt_size_lengths, buf_size_lengths)
     print "%.3fs: done filtering" % (time.time() - start_time)
-    print "streams: %s" % str(torrent_streams.keys())
+    # print "downloaded: %s" % str(downstreams_lengths)
+    # print "uploaded: %s" % str(upstreams_lengths)
     f.close()
 
+
+#Assumes all dictionaries have the exacts same keys
+def merge_features(*args):
+    if len(args) == 0:
+        return None
+
+    result = dict((stream, []) for stream in args[0].keys())
+    for key in result.keys():
+        result[key] = [feature[key] for feature in args]
+    return result
+
+
+
 # apply_function : (StreamId s_id) x (int timestamp) x (byte[] buf) => void
-def iterate_over_streams(pcap, streams, apply_function):
+def iterate_over_streams(pcap, streams, *apply_functions):
     for timestamp, buf in pcap:
         eth = dpkt.ethernet.Ethernet(buf)
         if not isinstance(eth.data, dpkt.ip.IP):
@@ -72,7 +108,8 @@ def iterate_over_streams(pcap, streams, apply_function):
         stream_id = StreamId((ip.src, sport), (ip.dst, dport), protocol_str)
         # Already identified this stream
         if streams.has_key(stream_id):
-            apply_function(stream_id, timestamp, buf)
+            for fun in apply_functions:
+                fun(stream_id, timestamp, buf)
 
 
 
@@ -118,7 +155,7 @@ def get_all_streams(pcap):
 
 
 def is_torrent(pkt):
-    filters = [tracker_filter, HandhakeFilter, PieceFilter]
+    filters = [HandhakeFilter]
     for filt in filters:
         torrent, output = filt(pkt)
         if torrent:

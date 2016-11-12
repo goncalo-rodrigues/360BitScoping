@@ -5,6 +5,7 @@ from scapy.all import *
 from tracker_filter import tracker_filter, print_output
 from HandShakeTracker import HandhakeFilter
 from PieceFilter import PieceFilter
+from PortFilter import PortFilter
 
 start_time = 0
 
@@ -116,8 +117,23 @@ def get_all_streams(pcap):
         result[stream_id] = output
     return result
 
+"""
+def is_torrent(pkt):
+    filters = [tracker_filter, HandhakeFilter, PieceFilter]
+    for filt in filters:
+        torrent, output = filt(pkt)
+        if torrent:
+            return torrent, output
+    return False, {}
+
+"""
 
 def is_torrent(pkt):
+    torrent, output = PortFilter(pkt)
+    if not torrent:
+        #print output['sport'],output['dport']
+        return False, {}
+
     filters = [tracker_filter, HandhakeFilter, PieceFilter]
     for filt in filters:
         torrent, output = filt(pkt)

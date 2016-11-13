@@ -2,20 +2,26 @@ import dpkt
 import socket
 import binascii
 
-#Well-known ports
+#RANGE
 MIN_PORT = 0
 MAX_PORT = 1024
+
+#
+OTHER_KNOWN_PORTS = []
 
 #-----------------------------------------------------------------------
 
 def getPorts(packet):
     return packet.sport, packet.dport
 
+def isKnown(port):
+    return port >= MIN_PORT and port <= MAX_PORT \
+            and port not in OTHER_KNOWN_PORTS
+
 
 def PortFilter(packet):
     sport, dport = getPorts(packet)
-    if (sport >= MIN_PORT and dport >= MIN_PORT) and \
-        (sport <= MAX_PORT and dport <= MAX_PORT):
-
+    if isKnown(sport) or isKnown(dport):
         return False, {'sport':sport, 'dport':dport}
+
     return True, {'sport':sport, 'dport':dport}

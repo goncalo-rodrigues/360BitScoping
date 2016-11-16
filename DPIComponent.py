@@ -6,6 +6,7 @@ from tracker_filter import tracker_filter, print_output
 from HandShakeTracker import HandhakeFilter
 from PieceFilter import PieceFilter
 from AttributeMeters import DirectionPacketLengthDistributionMeter
+from PortFilter import PortFilter
 
 start_time = 0
 
@@ -192,9 +193,25 @@ def get_all_streams(pcap):
         print "New Stream %s" % str(stream_id)
     return result
 
+"""
+def is_torrent(pkt):
+    filters = [tracker_filter, HandhakeFilter, PieceFilter]
+    for filt in filters:
+        torrent, output = filt(pkt)
+        if torrent:
+            return torrent, output
+    return False, {}
+
+"""
 
 def is_torrent(pkt):
-    filters = [HandhakeFilter]
+    torrent, output = PortFilter(pkt)
+    if not torrent:
+        #print output['sport'],output['dport']
+        return False, {}
+
+    filters = [tracker_filter, HandhakeFilter, PieceFilter]
+
     for filt in filters:
         torrent, output = filt(pkt)
         if torrent:

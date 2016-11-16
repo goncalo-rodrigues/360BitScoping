@@ -7,7 +7,7 @@ from scapy.all import *
 import os
 import thread
 
-SIZE_THRESHOLD_MB = 1000
+SIZE_THRESHOLD_MB = 3000
 SIZE_SPLIT_MB = 500
 
 def main(argv):

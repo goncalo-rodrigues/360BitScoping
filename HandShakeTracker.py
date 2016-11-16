@@ -82,7 +82,8 @@ def decodeRegularClient(client_str):
     mappedID = ""
     clientID = client_str[0:2]
     clientVersion = client_str[2:]
-    mappedID = mapping[clientID]
+    if mapping.has_key(clientID):
+        mappedID = mapping[clientID]
     if mappedID != "":
         translated = mapping[clientID] + " " + str(int(clientVersion[0], 16)) + "." + str(int(clientVersion[1],16)) + "." + str(int(clientVersion[2],16))
     return translated

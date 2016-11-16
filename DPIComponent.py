@@ -5,6 +5,7 @@ from scapy.all import *
 from tracker_filter import tracker_filter, print_output
 from HandShakeTracker import HandhakeFilter
 from PieceFilter import PieceFilter
+from AttributeMeters import DirectionPacketLengthDistributionMeter
 
 start_time = 0
 
@@ -30,6 +31,9 @@ def DPIComponent(filepath, out_pcap=None):
     f = open(filepath)
     pcap = dpkt.pcap.Reader(f)
 
+    #print DirectionPacketLengthDistributionMeter(pcap)
+    #return
+
     torrent_streams = get_all_streams(pcap)
 
     f.seek(0)
@@ -37,29 +41,60 @@ def DPIComponent(filepath, out_pcap=None):
 
     pkt_size_lengths = {}
     buf_size_lengths = {}
+    total_packets_in = {}
+    total_size_in = {}
+    total_size_out = {}
+    total_packets_out = {}
+    total_packet_diff = {}
 
     def apply_function(stream_id,ts,buffer):
         if out_pcap is not None:
             out_pcap.writepkt(buffer, ts)
 
     def feature1(stream_id, ts, buffer):
+        stream_id = uniStreamToBiStream(stream_id)
+
         if buf_size_lengths.has_key(stream_id):
             buf_size_lengths[stream_id] += len(buffer)
         else:
             buf_size_lengths[stream_id] = len(buffer)
 
     def feature2(stream_id, ts, buffer):
+        normalized_id = uniStreamToBiStream(stream_id)
+
+        if not total_size_in.has_key(normalized_id):
+            total_size_in[normalized_id] = 0
+
+        if not total_size_out.has_key(normalized_id):
+            total_size_out[normalized_id] = 0
+
         totalsize = len(dpkt.ethernet.Ethernet(buffer).data.data.data)
 
-        if pkt_size_lengths.has_key(stream_id):
-            pkt_size_lengths[stream_id] += totalsize
+        if normalized_id == stream_id:
+            total_size_in[normalized_id] += totalsize
         else:
-            pkt_size_lengths[stream_id] = totalsize
+            total_size_out[normalized_id] += totalsize
+
+    def feature3(stream_id, ts, buffer):
+        normalized_id = uniStreamToBiStream(stream_id)
+
+        if not total_packets_in.has_key(normalized_id):
+            total_packets_in[normalized_id] = 0
+
+        if not total_packets_out.has_key(normalized_id):
+            total_packets_out[normalized_id] = 0
+
+        if normalized_id == stream_id:
+            total_packets_in[normalized_id] += 1
+        else:
+            total_packets_out[normalized_id] += 1
+
+        total_packet_diff[normalized_id] = total_packets_in[normalized_id] - total_packets_out[normalized_id]
 
 
-    iterate_over_streams(pcap, torrent_streams, apply_function, feature1, feature2)
+    iterate_over_streams(pcap, torrent_streams, apply_function, feature1, feature2, feature3)
 
-    print merge_features(pkt_size_lengths, buf_size_lengths)
+    print merge_features(buf_size_lengths, total_size_in, total_size_out, total_packet_diff)
     print "%.3fs: done filtering" % (time.time() - start_time)
     # print "downloaded: %s" % str(downstreams_lengths)
     # print "uploaded: %s" % str(upstreams_lengths)
@@ -85,6 +120,7 @@ def iterate_over_streams(pcap, streams, *apply_functions):
         if not isinstance(eth.data, dpkt.ip.IP):
             continue
         ip = eth.data
+
         pkt = ip.data
 
         if pkt is None:
@@ -104,6 +140,8 @@ def iterate_over_streams(pcap, streams, *apply_functions):
             dport = pkt.dport
         except AttributeError:
             pass
+
+
 
         stream_id = StreamId((ip.src, sport), (ip.dst, dport), protocol_str)
         # Already identified this stream
@@ -151,6 +189,7 @@ def get_all_streams(pcap):
             continue
 
         result[stream_id] = output
+        print "New Stream %s" % str(stream_id)
     return result
 
 
@@ -162,11 +201,22 @@ def is_torrent(pkt):
             return torrent, output
     return False, {}
 
+# Uniformalizes stream_ids so it outputs the same whether it is incoming or outgoing
+# A_IP:sport -> B_IP:dport outputs the same StreamId as B_IP:dport -> A_IP:sport
+def uniStreamToBiStream(stream_id):
+    srcip, dstip, sport, dport = stream_id.getSrcIp(), stream_id.getDstIp(), stream_id.getSrcPort(), stream_id.getDstPort()
+    if srcip < dstip:
+        return stream_id
+    else:
+        return StreamId((dstip, dport), (srcip, sport), stream_id.getProtocol(), False)
 
 class StreamId:
 
-    def __init__(self, srctuple, dsttuple, protocol):
-        self.entities = ((inet_to_str(srctuple[0]), srctuple[1]),
+    def __init__(self, srctuple, dsttuple, protocol, raw_inet_addresses = True):
+        if not raw_inet_addresses:
+            self.entities = (srctuple, dsttuple)
+        else:
+            self.entities = ((inet_to_str(srctuple[0]), srctuple[1]),
                          (inet_to_str(dsttuple[0]), dsttuple[1]))
         self.protocol = protocol
 
@@ -196,4 +246,6 @@ class StreamId:
     def getDstIp(self):
         return self.entities[1][0]
     def getDstPort(self):
-        return self.entities[0][1]
+        return self.entities[1][1]
+    def getProtocol(self):
+        return self.protocol

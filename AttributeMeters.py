@@ -82,3 +82,75 @@ def NibblePositionPopularityMeter(stream):
     return result_vector
 
 
+def First4PacketsByteFrequencyMeter(stream):
+    result_vector = np.zeros(vector_size)
+    packets_seen = 0
+    bytes_to_see = 100
+    for _, buf in stream:
+        eth = dpkt.ethernet.Ethernet(buf)
+        ip = eth.data
+        pkt = ip.data
+
+        if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
+            continue
+
+        offset = packets_seen * vector_size / 4
+        data = pkt.data
+        for i in range(min(bytes_to_see, len(data))):
+            index = int(offset + (ord(data[i]) % (vector_size / 4)))
+            result_vector[index] += 1
+
+        packets_seen += 1
+        if packets_seen >= 4:
+            break
+
+    return result_vector
+
+
+def First2PacketsFirst8ByteHashDirectionCountsMeter(stream):
+    # must produce a hash value between 0 and vector_size >> 4
+    def hash(byte):
+        return byte * 11 % (vector_size >> 4)
+    client = ""
+    server = ""
+    seen_packets = 0
+    countersInc = np.zeros(vector_size >> 4, dtype=int)
+    countersOut = np.zeros(vector_size >> 4, dtype=int)
+    num_bytes = 8
+    result_vector = np.zeros(vector_size)
+    for _, buf in stream:
+        eth = dpkt.ethernet.Ethernet(buf)
+        ip = eth.data
+        pkt = ip.data
+
+        if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
+            continue
+
+        if client == "":
+            client = ip.src
+            server = ip.dst
+
+
+
+        data = pkt.data
+        for i in range(min(num_bytes, len(data))):
+            h = hash(ord(data[i]))
+            if client == ip.src: #outgoing
+                countersOut[h] += 1
+            else: #incoming
+                countersInc[h] += 1
+
+        seen_packets += 1
+        if seen_packets >= 2:
+            break
+
+    for i in range(len(countersOut)):
+        result_vector[i*num_bytes + countersOut[i]] += 1
+        result_vector[vector_size / 2 + i*num_bytes + countersInc[i]] += 1
+
+    return result_vector
+
+
+
+def relative_entropy(observed_attr, known_attr):
+    return np.sum(np.multiply(observed_attr, (np.log(observed_attr) - np.log(known_attr))))

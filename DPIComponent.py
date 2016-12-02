@@ -5,7 +5,7 @@ from scapy.all import *
 from tracker_filter import tracker_filter, print_output
 from HandShakeTracker import HandhakeFilter
 from PieceFilter import PieceFilter
-from AttributeMeters import DirectionPacketLengthDistributionMeter
+from AttributeMeters import *
 from PortFilter import PortFilter
 
 start_time = 0
@@ -32,8 +32,8 @@ def DPIComponent(filepath, out_pcap=None):
     f = open(filepath)
     pcap = dpkt.pcap.Reader(f)
 
-    #print DirectionPacketLengthDistributionMeter(pcap)
-    #return
+    print First2PacketsFirst8ByteHashDirectionCountsMeter(pcap)
+    return
 
     torrent_streams = get_all_streams(pcap)
 

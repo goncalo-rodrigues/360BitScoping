@@ -82,3 +82,32 @@ def NibblePositionPopularityMeter(stream):
     return result_vector
 
 
+
+def FirstBitPositionsMeter(stream):
+    client = ""
+    server = ""
+    packets_to_inspect = 8
+    bytes_to_inspect = 16
+    packets_inspected = 0
+    result_vector = np.zeros(vector_size)
+
+    for _, buf in stream:
+        if packets_inspected >= packets_to_inspect:
+            return result_vector
+
+        eth = dpkt.ethernet.Ethernet(buf)
+        ip = eth.data
+        pkt = ip.data
+
+        if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
+            continue
+
+        if client == "":
+            client = ip.src
+            server = ip.dst
+
+        if len(pkt.data) == 0:
+            continue
+
+def First2OrderedFirstBitPositionsMeter(stream):
+    pass

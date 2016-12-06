@@ -1,7 +1,9 @@
 import dpkt
+import binascii
 import math
 import numpy as np
 import random
+from bitstring import BitArray
 vector_size = 256
 random.seed(5274)
 hash_table_4_bits = [random.randint(0, 15) for i in range(256)]
@@ -160,44 +162,58 @@ def First2PacketsFirst8ByteHashDirectionCountsMeter(stream):
 ##############################################################################
 
 def FirstBitPositionsMeter(stream):
-    client = ""
-    server = ""
+    packet_jump = 16
+    zero_value = 0
+    one_value = 128
     packets_to_inspect = 8
     bytes_to_inspect = 16
     packets_inspected = 0
-    result_vector = np.zeros(vector_size)
-    packets_seen = 0
+    bytes_inspected = 0
+    result_vector = np.zeros(vector_size,dtype = int)
+
+    bits_read = 0
 
     for _, buf in stream:
         if packets_inspected >= packets_to_inspect:
+            increments = 0
+            for position in result_vector:
+                increments += position
+            print(bits_read)
+            print(increments)
+
             return result_vector
+        else:
+            eth = dpkt.ethernet.Ethernet(buf)
+            ip = eth.data
+            pkt = ip.data
 
-        eth = dpkt.ethernet.Ethernet(buf)
-        ip = eth.data
-        pkt = ip.data
+            if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
+                continue
+            data = pkt.data
+            data_str = binascii.hexlify(data)
 
-        if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
-            continue
+            if data_str == "":
+                continue
 
-        offset = packets_seen * vector_size / 8
+            bit_array = bin(int(data_str, 16))
+            bit_array = bit_array[2:]
 
-        """
-        if client == "":
-            client = ip.src
-            server = ip.dst
+            size = min(len(bit_array), 16 * 8)
 
-        if len(pkt.data) == 0:
-            continue
+            print bit_array[0:size] + "\n"
+            for index in range (size):
+                bits_read +=1
+                bytes_inspected = index % 8
+                value = bit_array[index]
+                if value == "0":
+                    result_vector[zero_value + (packets_inspected * packet_jump) + bytes_inspected] += 1
+                else:
+                    result_vector[one_value + (packets_inspected * packet_jump) + bytes_inspected] += 1
+            packets_inspected += 1
 
-        data = pkt.data
-        sz = min(bytes_to_inspect, len(data))
-        """
 
-        packets_seen += 1
-        if packets_seen >= 4:
-            break
 
-    return result_vector
+
 
 
 

@@ -32,7 +32,7 @@ def DPIComponent(filepath, out_pcap=None):
     f = open(filepath)
     pcap = dpkt.pcap.Reader(f)
 
-    print First2PacketsFirst8ByteHashDirectionCountsMeter(pcap)
+    print FirstBitPositionsMeter(pcap)
     return
 
     torrent_streams = get_all_streams(pcap)

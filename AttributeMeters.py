@@ -5,13 +5,21 @@ import random
 vector_size = 256
 random.seed(5274)
 hash_table_4_bits = [random.randint(0, 15) for i in range(256)]
+
+
 def DirectionPacketLengthDistributionMeter(stream):
     max_tcp_size = 2**16
     # max tcp packet size is 2**16. this assures exponent**128 = 2**16, so we use all bits in the vector
     exponent = 2**(math.log(max_tcp_size, 2) / (float(vector_size) / 2))
+    linear_up_to = 0
+    for i in range(2, vector_size / 2):
+        if exponent ** i >= i:
+            break
+    linear_up_to = i
     def GetPacketBinNumber(packet_length):
-        if packet_length == 0:
-            return 0
+
+        if packet_length < linear_up_to:
+            return packet_length
         return min(math.floor(math.log(packet_length, exponent)), vector_size/2 - 1)
 
     client = ""

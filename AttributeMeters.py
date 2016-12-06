@@ -166,10 +166,40 @@ def FirstBitPositionsMeter(stream):
     bytes_to_inspect = 16
     packets_inspected = 0
     result_vector = np.zeros(vector_size)
+    packets_seen = 0
 
     for _, buf in stream:
         if packets_inspected >= packets_to_inspect:
             return result_vector
+
+        eth = dpkt.ethernet.Ethernet(buf)
+        ip = eth.data
+        pkt = ip.data
+
+        if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
+            continue
+
+        offset = packets_seen * vector_size / 8
+
+        """
+        if client == "":
+            client = ip.src
+            server = ip.dst
+
+        if len(pkt.data) == 0:
+            continue
+
+        data = pkt.data
+        sz = min(bytes_to_inspect, len(data))
+        """
+
+        packets_seen += 1
+        if packets_seen >= 4:
+            break
+
+    return result_vector
+
+
 
 
 def First2OrderedFirstBitPositionsMeter(stream):

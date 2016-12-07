@@ -8,9 +8,12 @@ from HandShakeTracker import HandhakeFilter
 from PieceFilter import PieceFilter
 from AttributeMeters import *
 from PortFilter import PortFilter
+from subprocess import call
+import os
 
 start_time = 0
-np.set_printoptions(threshold=np.nan)
+
+np.set_printoptions(threshold=np.nan, precision=3)
 
 def inet_to_str(inet):
     """Convert inet object to a string
@@ -33,7 +36,7 @@ def DPIComponent(filepath, out_pcap=None):
     print "%.3fs: starting read" % (time.time() - start_time)
     f = open(filepath)
     pcap = dpkt.pcap.Reader(f)
-    generate_stream_model(f)
+    #generate_stream_model(f)
     return
 
     torrent_streams = get_all_streams(pcap)
@@ -267,31 +270,3 @@ class StreamId:
         return self.entities[1][1]
     def getProtocol(self):
         return self.protocol
-
-def generate_stream_model(file):
-
-
-    meters = [DirectionPacketLengthDistributionMeter, NibblePositionPopularityMeter, First4PacketsByteFrequencyMeter, \
-    First2PacketsFirst8ByteHashDirectionCountsMeter, FirstBitPositionsMeter, First2OrderedFirstBitPositionsMeter, \
-    AccumulatedDirectionBytesMeter, First4PacketsFirst32BytesEqualityMeter]
-
-    model = np.zeros(vector_size * len(meters), dtype=int)
-
-    result = []
-    for meter in meters:
-        file.seek(0)
-        stream = dpkt.pcap.Reader(file)
-        result.append(normalize_model(meter(stream)))
-    model = np.concatenate(result)
-    print(model)
-    return model
-
-
-def normalize_model(model):
-    model.dtype = float
-    return model / np.sum(model)
-
-def generate_model(file_list):
-    1
-    #split file
-    #passar as streams todas

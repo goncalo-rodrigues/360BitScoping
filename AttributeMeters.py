@@ -3,7 +3,6 @@ import binascii
 import math
 import numpy as np
 import random
-from bitstring import BitArray
 vector_size = 256
 random.seed(5274)
 hash_table_4_bits = [random.randint(0, 15) for i in range(256)]
@@ -160,7 +159,6 @@ def First2PacketsFirst8ByteHashDirectionCountsMeter(stream):
         if seen_packets >= 2:
             break
 
-    print countersOut
     for i in range(len(countersOut)):
         result_vector[i*num_bytes + countersOut[i]] += 1
         result_vector[vector_size / 2 + i*num_bytes + countersInc[i]] += 1

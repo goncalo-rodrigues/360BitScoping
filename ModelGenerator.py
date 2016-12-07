@@ -7,7 +7,8 @@ import shutil
 from AttributeMeters import *
 model_dir = "model_streams"
 splitter_name = "./PcapSplitter"
-bpf_filter = "not tcp port (80 or 8000 or 8080 or 443 or 2869)"
+bpf_filter = "(not tcp port (80 or 8000 or 8080 or 443 or 2869)) and tcp or udp" #"not tcp port (80 or 8000 or 8080 or 443 or 2869)"
+smoothing = 0.0000000001
 
 np.set_printoptions(threshold=np.nan, precision=4, suppress=True)
 def main():
@@ -34,7 +35,9 @@ def generate_stream_model(file):
 
 def normalize_model(model):
     model.dtype = float
-    return model / np.sum(model, axis=1)[:, None]
+    sumdiv = np.sum(model, axis=1)[:, None]
+    sumdiv[sumdiv==0] = 1
+    return model / sumdiv
 
 
 def generate_model(file_list):
@@ -60,11 +63,11 @@ def generate_model(file_list):
     model = normalize_model(model)
 
     print model[0]
-    is_torrent_stream(open(os.path.join(model_dir, "6.93k-0085.pcap")), model)
+    is_torrent_stream(open(os.path.join(model_dir, "wallpapers-0085.pcap")), model)
     return model
 
 def relative_entropy(observed_attr, known_attr):
-    return np.sum(np.multiply(observed_attr, (np.log(observed_attr) - np.log(known_attr))))
+    return np.sum(np.multiply(observed_attr, (np.log(observed_attr+smoothing) - np.log(known_attr+smoothing))))
 
 def is_torrent_stream(stream_file, torrent_model):
     # stream_fingerprints = normalize_model(generate_stream_model(stream_file)).reshape((-1,))
@@ -77,6 +80,11 @@ def is_torrent_stream(stream_file, torrent_model):
     for i in range(stream_fingerprints.shape[0]):
         print relative_entropy(stream_fingerprints[i], torrent_model[i])
 
-
+#-------------------------------------------------------
+#PRE-PROCESSING
+#-------
+def pre_process(folder):
+    pass
+    
 if __name__ == "__main__":
     main()

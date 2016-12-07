@@ -3,6 +3,7 @@ import os
 from subprocess import call
 import argparse
 import numpy as np
+import shutil
 from AttributeMeters import *
 model_dir = "model_streams"
 splitter_name = "./PcapSplitter"
@@ -10,7 +11,7 @@ splitter_name = "./PcapSplitter"
 np.set_printoptions(threshold=np.nan, precision=4, suppress=True)
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("input_files", nargs="+", help="Capture files to train the model")
+    parser.add_argument("input_files", nargs="+", help="Traffic capture (.pcap) files to train the model")
     args = parser.parse_args()
     generate_model(args.input_files)
 
@@ -36,8 +37,11 @@ def normalize_model(model):
 
 
 def generate_model(file_list):
+
+    shutil.rmtree(model_dir, ignore_errors=True)
     if not os.path.exists(model_dir):
         os.makedirs(model_dir)
+
     print file_list
     for file_name in file_list:
         call([splitter_name, "-f", file_name,  "-o", model_dir, "-m", "connection"])
@@ -50,13 +54,28 @@ def generate_model(file_list):
             model = result
         else:
             model += result
+        f.close()
 
     model = normalize_model(model)
 
-    print model
+    print model[0]
+    is_torrent_stream(open(os.path.join(model_dir, "6.93k-0085.pcap")), model)
+    return model
 
+def relative_entropy(observed_attr, known_attr):
+    return np.sum(np.multiply(observed_attr, (np.log(observed_attr) - np.log(known_attr))))
 
-    #model = np.concatenate(result)
+def is_torrent_stream(stream_file, torrent_model):
+    # stream_fingerprints = normalize_model(generate_stream_model(stream_file)).reshape((-1,))
+    # # concatenate array values
+    # torrent_model = torrent_model.reshape((-1,))
+    # entropy = relative_entropy(stream_fingerprints, torrent_model)
+    #print entropy
+    stream_fingerprints = normalize_model(generate_stream_model(stream_file))
+    print stream_fingerprints[0]
+    for i in range(stream_fingerprints.shape[0]):
+        print relative_entropy(stream_fingerprints[i], torrent_model[i])
+
 
 if __name__ == "__main__":
     main()

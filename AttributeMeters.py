@@ -15,6 +15,8 @@ for i in range(2, vector_size / 2):
         break
 
 
+
+
 def DirectionPacketLengthDistributionMeter(stream):
     def GetPacketBinNumber(packet_length):
 
@@ -318,11 +320,11 @@ def First4PacketsFirst32BytesEqualityMeter(stream):
         data = pkt.data
         current_data = data[:min(32, len(data))]
 
-        if(not ignore):
+        if not ignore:
             equality_int = 0
 
             for i in range(min(len(current_data), len(previous_data))):
-                equality_int = equality_int << 1
+                equality_int <<= 1
                 if previous_data[i] == current_data[i]:
                     equality_int += 1
             result_vector[knuths_method(equality_int)] += 1
@@ -334,5 +336,4 @@ def First4PacketsFirst32BytesEqualityMeter(stream):
 
 ##############################################################################
 
-def relative_entropy(observed_attr, known_attr):
-    return np.sum(np.multiply(observed_attr, (np.log(observed_attr) - np.log(known_attr))))
+

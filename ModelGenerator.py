@@ -7,6 +7,7 @@ import shutil
 from AttributeMeters import *
 model_dir = "model_streams"
 splitter_name = "./PcapSplitter"
+bpf_filter = "not tcp port (80 or 8000 or 8080 or 443 or 2869)"
 
 np.set_printoptions(threshold=np.nan, precision=4, suppress=True)
 def main():
@@ -44,7 +45,7 @@ def generate_model(file_list):
 
     print file_list
     for file_name in file_list:
-        call([splitter_name, "-f", file_name,  "-o", model_dir, "-m", "connection"])
+        call([splitter_name, "-i", bpf_filter, "-f", file_name,  "-o", model_dir, "-m", "connection"])
 
     model = None
     for stream_file in os.listdir(model_dir):

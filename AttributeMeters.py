@@ -30,6 +30,11 @@ def DirectionPacketLengthDistributionMeter(stream):
     for _, buf in stream:
         eth = dpkt.ethernet.Ethernet(buf)
         ip = eth.data
+		
+
+        if not (isinstance(ip, dpkt.ip6.IP6) or isinstance(ip, dpkt.ip.IP)):
+			continue
+			
         pkt = ip.data
 
         if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
@@ -63,6 +68,9 @@ def NibblePositionPopularityMeter(stream):
             return result_vector
         eth = dpkt.ethernet.Ethernet(buf)
         ip = eth.data
+		
+        if not (isinstance(ip, dpkt.ip6.IP6) or isinstance(ip, dpkt.ip.IP)):
+			continue
         pkt = ip.data
 
         if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
@@ -102,6 +110,11 @@ def First4PacketsByteFrequencyMeter(stream):
     for _, buf in stream:
         eth = dpkt.ethernet.Ethernet(buf)
         ip = eth.data
+		
+
+        if not (isinstance(ip, dpkt.ip6.IP6) or isinstance(ip, dpkt.ip.IP)):
+			continue
+                
         pkt = ip.data
 
         if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
@@ -135,6 +148,10 @@ def First2PacketsFirst8ByteHashDirectionCountsMeter(stream):
     for _, buf in stream:
         eth = dpkt.ethernet.Ethernet(buf)
         ip = eth.data
+        
+        if not (isinstance(ip, dpkt.ip6.IP6) or isinstance(ip, dpkt.ip.IP)):
+			continue
+            
         pkt = ip.data
 
         if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
@@ -182,6 +199,9 @@ def FirstBitPositionsMeter(stream):
         else:
             eth = dpkt.ethernet.Ethernet(buf)
             ip = eth.data
+			
+            if not (isinstance(ip, dpkt.ip6.IP6) or isinstance(ip, dpkt.ip.IP)):
+				continue
             pkt = ip.data
 
             if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
@@ -224,6 +244,9 @@ def First2OrderedFirstBitPositionsMeter(stream):
         else:
             eth = dpkt.ethernet.Ethernet(buf)
             ip = eth.data
+            
+            if not (isinstance(ip, dpkt.ip6.IP6) or isinstance(ip, dpkt.ip.IP)):
+				continue
             pkt = ip.data
 
             if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
@@ -268,6 +291,10 @@ def AccumulatedDirectionBytesMeter(stream):
 
         eth = dpkt.ethernet.Ethernet(buf)
         ip = eth.data
+        
+        if not (isinstance(ip, dpkt.ip6.IP6) or isinstance(ip, dpkt.ip.IP)):
+			continue
+            
         pkt = ip.data
         if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
             continue
@@ -313,7 +340,12 @@ def First4PacketsFirst32BytesEqualityMeter(stream):
 
         eth = dpkt.ethernet.Ethernet(buf)
         ip = eth.data
+        
+        if not (isinstance(ip, dpkt.ip6.IP6) or isinstance(ip, dpkt.ip.IP)):
+			continue
+            
         pkt = ip.data
+        
         if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):
             continue
 

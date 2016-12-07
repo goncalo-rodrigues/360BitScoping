@@ -7,7 +7,7 @@ from AttributeMeters import *
 model_dir = "model_streams"
 splitter_name = "./PcapSplitter"
 
-np.set_printoptions(threshold=np.nan, precision=3, suppress=True)
+np.set_printoptions(threshold=np.nan, precision=4, suppress=True)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_files", nargs="+", help="Capture files to train the model")

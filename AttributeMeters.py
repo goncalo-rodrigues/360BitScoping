@@ -6,17 +6,16 @@ import random
 vector_size = 256
 random.seed(5274)
 hash_table_4_bits = [random.randint(0, 15) for i in range(256)]
+max_tcp_size = 2**16
+# max tcp packet size is 2**16. this assures exponent**128 = 2**16, so we use all bits in the vector
+exponent = 2**(math.log(max_tcp_size, 2) / (float(vector_size) / 2))
+for i in range(2, vector_size / 2):
+    linear_up_to = i
+    if exponent ** i >= i:
+        break
 
 
 def DirectionPacketLengthDistributionMeter(stream):
-    max_tcp_size = 2**16
-    # max tcp packet size is 2**16. this assures exponent**128 = 2**16, so we use all bits in the vector
-    exponent = 2**(math.log(max_tcp_size, 2) / (float(vector_size) / 2))
-    linear_up_to = 0
-    for i in range(2, vector_size / 2):
-        if exponent ** i >= i:
-            break
-    linear_up_to = i
     def GetPacketBinNumber(packet_length):
 
         if packet_length < linear_up_to:
@@ -167,17 +166,13 @@ def First2PacketsFirst8ByteHashDirectionCountsMeter(stream):
 
 ##############################################################################
 
+
 def FirstBitPositionsMeter(stream):
-    packet_jump = 16
     zero_value = 0
     one_value = 128
     packets_to_inspect = 8
-    bytes_to_inspect = 16
     packets_inspected = 0
-    bytes_inspected = 0
-    result_vector = np.zeros(vector_size,dtype = int)
-
-    bits_read = 0
+    result_vector = np.zeros(vector_size, dtype=int)
 
     for _, buf in stream:
         if packets_inspected >= packets_to_inspect:
@@ -200,13 +195,12 @@ def FirstBitPositionsMeter(stream):
 
             size = min(len(bit_array), 16 * 8)
 
-            for index in range (size):
-                bytes_inspected = index % 8
+            for index in range(size):
                 value = bit_array[index]
                 if value == "0":
-                    result_vector[zero_value + (packets_inspected * packet_jump) + bytes_inspected] += 1
+                    result_vector[zero_value + index] += 1
                 else:
-                    result_vector[one_value + (packets_inspected * packet_jump) + bytes_inspected] += 1
+                    result_vector[one_value + index] += 1
             packets_inspected += 1
     return result_vector
 

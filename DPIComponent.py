@@ -36,70 +36,16 @@ def DPIComponent(filepath, out_pcap=None):
     print "%.3fs: starting read" % (time.time() - start_time)
     f = open(filepath)
     pcap = dpkt.pcap.Reader(f)
-    #generate_stream_model(f)
-    return
 
     torrent_streams = get_all_streams(pcap)
-
-    f.seek(0)
-    pcap = dpkt.pcap.Reader(f)
-
-    pkt_size_lengths = {}
-    buf_size_lengths = {}
-    total_packets_in = {}
-    total_size_in = {}
-    total_size_out = {}
-    total_packets_out = {}
-    total_packet_diff = {}
 
     def apply_function(stream_id,ts,buffer):
         if out_pcap is not None:
             out_pcap.writepkt(buffer, ts)
 
-    def feature1(stream_id, ts, buffer):
-        stream_id = uniStreamToBiStream(stream_id)
-
-        if buf_size_lengths.has_key(stream_id):
-            buf_size_lengths[stream_id] += len(buffer)
-        else:
-            buf_size_lengths[stream_id] = len(buffer)
-
-    def feature2(stream_id, ts, buffer):
-        normalized_id = uniStreamToBiStream(stream_id)
-
-        if not total_size_in.has_key(normalized_id):
-            total_size_in[normalized_id] = 0
-
-        if not total_size_out.has_key(normalized_id):
-            total_size_out[normalized_id] = 0
-
-        totalsize = len(dpkt.ethernet.Ethernet(buffer).data.data.data)
-
-        if normalized_id == stream_id:
-            total_size_in[normalized_id] += totalsize
-        else:
-            total_size_out[normalized_id] += totalsize
-
-    def feature3(stream_id, ts, buffer):
-        normalized_id = uniStreamToBiStream(stream_id)
-
-        if not total_packets_in.has_key(normalized_id):
-            total_packets_in[normalized_id] = 0
-
-        if not total_packets_out.has_key(normalized_id):
-            total_packets_out[normalized_id] = 0
-
-        if normalized_id == stream_id:
-            total_packets_in[normalized_id] += 1
-        else:
-            total_packets_out[normalized_id] += 1
-
-        total_packet_diff[normalized_id] = total_packets_in[normalized_id] - total_packets_out[normalized_id]
+    iterate_over_streams(pcap, torrent_streams, apply_function)
 
 
-    iterate_over_streams(pcap, torrent_streams, apply_function, feature1, feature2, feature3)
-
-    print merge_features(buf_size_lengths, total_size_in, total_size_out, total_packet_diff)
     print "%.3fs: done filtering" % (time.time() - start_time)
     # print "downloaded: %s" % str(downstreams_lengths)
     # print "uploaded: %s" % str(upstreams_lengths)

@@ -43,16 +43,18 @@ def normalize_model(model):
     sumdiv[sumdiv==0] = 1
     return model / sumdiv
 
+def split_pcap_into_streams(file_name, output_dir):
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    call([splitter_name, "-i", bpf_filter, "-f", file_name,  "-o", output_dir, "-m", "connection"])
+
 
 def generate_model(file_list):
 
     shutil.rmtree(model_dir, ignore_errors=True)
-    if not os.path.exists(model_dir):
-        os.makedirs(model_dir)
 
-    print file_list
     for file_name in file_list:
-        call([splitter_name, "-i", bpf_filter, "-f", file_name,  "-o", model_dir, "-m", "connection"])
+        split_pcap_into_streams(file_name, model_dir)
     pre_process(model_dir)
     model = None
     for stream_file in os.listdir(model_dir):

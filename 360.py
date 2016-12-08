@@ -6,6 +6,7 @@ from DPIComponent import DPIComponent
 from scapy.all import *
 import os
 import thread
+from SPIDComponent import SPIDComponent
 
 SIZE_THRESHOLD_MB = 3000
 SIZE_SPLIT_MB = 500
@@ -64,6 +65,7 @@ where possible options include:\n\
             out_pcap = None
             output_f = None
         DPIComponent(in_pcap, out_pcap)
+        SPIDComponent(in_pcap, out_pcap)
 
 
 

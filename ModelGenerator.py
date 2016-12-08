@@ -5,16 +5,19 @@ import argparse
 import numpy as np
 import shutil
 from AttributeMeters import *
+from tracker_filter import tracker_filter
 model_dir = "model_streams"
 splitter_name = "./PcapSplitter"
-bpf_filter = "not tcp port (80 or 8000 or 8080 or 443 or 2869)"
+bpf_filter = "(not tcp port (80 or 8000 or 8080 or 443 or 2869)) and tcp or udp" #"not tcp port (80 or 8000 or 8080 or 443 or 2869)"
+smoothing = 0.0000000001
 
 np.set_printoptions(threshold=np.nan, precision=4, suppress=True)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_files", nargs="+", help="Traffic capture (.pcap) files to train the model")
     args = parser.parse_args()
-    generate_model(args.input_files)
+    #generate_model(args.input_files)
+    pre_process("model_streams")
 
 
 def generate_stream_model(file):
@@ -34,7 +37,9 @@ def generate_stream_model(file):
 
 def normalize_model(model):
     model.dtype = float
-    return model / np.sum(model, axis=1)[:, None]
+    sumdiv = np.sum(model, axis=1)[:, None]
+    sumdiv[sumdiv==0] = 1
+    return model / sumdiv
 
 
 def generate_model(file_list):
@@ -60,11 +65,11 @@ def generate_model(file_list):
     model = normalize_model(model)
 
     print model[0]
-    is_torrent_stream(open(os.path.join(model_dir, "6.93k-0085.pcap")), model)
+    is_torrent_stream(open(os.path.join(model_dir, "wallpapers-0085.pcap")), model)
     return model
 
 def relative_entropy(observed_attr, known_attr):
-    return np.sum(np.multiply(observed_attr, (np.log(observed_attr+0.0000000001) - np.log(known_attr+0.0000000001))))
+    return np.sum(np.multiply(observed_attr, (np.log(observed_attr+smoothing) - np.log(known_attr+smoothing))))
 
 def is_torrent_stream(stream_file, torrent_model):
     # stream_fingerprints = normalize_model(generate_stream_model(stream_file)).reshape((-1,))
@@ -77,6 +82,45 @@ def is_torrent_stream(stream_file, torrent_model):
     for i in range(stream_fingerprints.shape[0]):
         print relative_entropy(stream_fingerprints[i], torrent_model[i])
 
+#-------------------------------------------------------
+#PRE-PROCESSING
+#-------
+def pre_process(folder):
 
+    files_list = os.listdir(folder)
+    orig_files = len(files_list)
+    res_files = len(files_list)
+
+    print "[>] Pre-processing..."
+    for file in files_list:
+        
+        path = folder+"/"+file
+        f = open(path)
+        pcap = dpkt.pcap.Reader(f)
+        
+        
+        #-----------------------
+        for timestamp, buf in pcap:
+            eth = dpkt.ethernet.Ethernet(buf)
+            if not isinstance(eth.data, dpkt.ip.IP):
+                continue
+            ip = eth.data
+            pkt = ip.data
+
+            if pkt is None:
+                continue
+
+            tracker, _ = tracker_filter(pkt)
+            if tracker:
+                res_files -= 1
+                os.remove(path)
+                break
+        #-----------------------
+        
+        
+        f.close()
+        
+    print "[>] Done! ("+str(orig_files)+" -> "+str(res_files)+" files)"
+    
 if __name__ == "__main__":
     main()

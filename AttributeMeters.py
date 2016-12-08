@@ -30,11 +30,9 @@ def DirectionPacketLengthDistributionMeter(stream):
     for _, buf in stream:
         eth = dpkt.ethernet.Ethernet(buf)
         ip = eth.data
-		
 
-        if not (isinstance(ip, dpkt.ip6.IP6) or isinstance(ip, dpkt.ip.IP)):
-			continue
-			
+        if not (isinstance(ip, dpkt.ip6.IP6) or (isinstance(ip, dpkt.ip.IP))):
+            continue
         pkt = ip.data
 
         if not (isinstance(pkt, dpkt.tcp.TCP) or isinstance(pkt, dpkt.udp.UDP)):

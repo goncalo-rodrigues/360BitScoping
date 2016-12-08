@@ -64,7 +64,7 @@ def generate_model(file_list):
     return model
 
 def relative_entropy(observed_attr, known_attr):
-    return np.sum(np.multiply(observed_attr, (np.log(observed_attr) - np.log(known_attr))))
+    return np.sum(np.multiply(observed_attr, (np.log(observed_attr+0.0000000001) - np.log(known_attr+0.0000000001))))
 
 def is_torrent_stream(stream_file, torrent_model):
     # stream_fingerprints = normalize_model(generate_stream_model(stream_file)).reshape((-1,))

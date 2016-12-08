@@ -7,17 +7,19 @@ import shutil
 from AttributeMeters import *
 from tracker_filter import tracker_filter
 model_dir = "model_streams"
+model_pathname = "model.pickle"
 splitter_name = "./PcapSplitter"
 bpf_filter = "(not tcp port (80 or 8000 or 8080 or 443 or 2869)) and tcp or udp" #"not tcp port (80 or 8000 or 8080 or 443 or 2869)"
 smoothing = 0.0000000001
+threshold = 1.7
 
 np.set_printoptions(threshold=np.nan, precision=4, suppress=True)
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_files", nargs="+", help="Traffic capture (.pcap) files to train the model")
     args = parser.parse_args()
-    #generate_model(args.input_files)
-    pre_process("model_streams")
+    generate_model(args.input_files)
+
 
 
 def generate_stream_model(file):
@@ -51,7 +53,7 @@ def generate_model(file_list):
     print file_list
     for file_name in file_list:
         call([splitter_name, "-i", bpf_filter, "-f", file_name,  "-o", model_dir, "-m", "connection"])
-
+    pre_process(model_dir)
     model = None
     for stream_file in os.listdir(model_dir):
         f = open(os.path.join(model_dir, stream_file))
@@ -64,23 +66,23 @@ def generate_model(file_list):
 
     model = normalize_model(model)
 
-    print model[0]
-    is_torrent_stream(open(os.path.join(model_dir, "wallpapers-0085.pcap")), model)
+    np.save(model_pathname, model)
+
+    is_torrent_stream(open(os.path.join(model_dir, "in_the_middle-0003.pcap")), model)
     return model
 
 def relative_entropy(observed_attr, known_attr):
-    return np.sum(np.multiply(observed_attr, (np.log(observed_attr+smoothing) - np.log(known_attr+smoothing))))
+    return np.sum(np.multiply(observed_attr, (np.log(observed_attr+smoothing) - np.log(known_attr+smoothing))), axis=-1)
 
 def is_torrent_stream(stream_file, torrent_model):
-    # stream_fingerprints = normalize_model(generate_stream_model(stream_file)).reshape((-1,))
-    # # concatenate array values
-    # torrent_model = torrent_model.reshape((-1,))
-    # entropy = relative_entropy(stream_fingerprints, torrent_model)
-    #print entropy
     stream_fingerprints = normalize_model(generate_stream_model(stream_file))
-    print stream_fingerprints[0]
-    for i in range(stream_fingerprints.shape[0]):
-        print relative_entropy(stream_fingerprints[i], torrent_model[i])
+    entropy = relative_entropy(stream_fingerprints, torrent_model)
+    print entropy
+    return np.average(entropy) > threshold
+    # stream_fingerprints = normalize_model(generate_stream_model(stream_file))
+    # print stream_fingerprints[0]
+    # for i in range(stream_fingerprints.shape[0]):
+    #     print relative_entropy(stream_fingerprints[i], torrent_model[i])
 
 #-------------------------------------------------------
 #PRE-PROCESSING
@@ -92,9 +94,9 @@ def pre_process(folder):
     res_files = len(files_list)
 
     print "[>] Pre-processing..."
-    for file in files_list:
+    for file_name in files_list:
         
-        path = folder+"/"+file
+        path = os.path.join(folder, file_name)
         f = open(path)
         pcap = dpkt.pcap.Reader(f)
         
@@ -116,8 +118,7 @@ def pre_process(folder):
                 os.remove(path)
                 break
         #-----------------------
-        
-        
+
         f.close()
         
     print "[>] Done! ("+str(orig_files)+" -> "+str(res_files)+" files)"

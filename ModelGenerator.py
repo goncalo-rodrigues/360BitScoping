@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 import shutil
 from AttributeMeters import *
+from tracker_filter import tracker_filter
 model_dir = "model_streams"
 splitter_name = "./PcapSplitter"
 bpf_filter = "(not tcp port (80 or 8000 or 8080 or 443 or 2869)) and tcp or udp" #"not tcp port (80 or 8000 or 8080 or 443 or 2869)"
@@ -15,7 +16,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("input_files", nargs="+", help="Traffic capture (.pcap) files to train the model")
     args = parser.parse_args()
-    generate_model(args.input_files)
+    #generate_model(args.input_files)
+    pre_process("model_streams")
 
 
 def generate_stream_model(file):
@@ -84,7 +86,41 @@ def is_torrent_stream(stream_file, torrent_model):
 #PRE-PROCESSING
 #-------
 def pre_process(folder):
-    pass
+
+    files_list = os.listdir(folder)
+    orig_files = len(files_list)
+    res_files = len(files_list)
+
+    print "[>] Pre-processing..."
+    for file in files_list:
+        
+        path = folder+"/"+file
+        f = open(path)
+        pcap = dpkt.pcap.Reader(f)
+        
+        
+        #-----------------------
+        for timestamp, buf in pcap:
+            eth = dpkt.ethernet.Ethernet(buf)
+            if not isinstance(eth.data, dpkt.ip.IP):
+                continue
+            ip = eth.data
+            pkt = ip.data
+
+            if pkt is None:
+                continue
+
+            tracker, _ = tracker_filter(pkt)
+            if tracker:
+                res_files -= 1
+                os.remove(path)
+                break
+        #-----------------------
+        
+        
+        f.close()
+        
+    print "[>] Done! ("+str(orig_files)+" -> "+str(res_files)+" files)"
     
 if __name__ == "__main__":
     main()

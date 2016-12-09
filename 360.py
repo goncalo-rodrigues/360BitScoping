@@ -10,7 +10,7 @@ from SPIDComponent import SPIDComponent
 
 SIZE_THRESHOLD_MB = 3000
 SIZE_SPLIT_MB = 500
-
+negative_pcap_path = "not_torrent.pcap"
 def main(argv):
     output_file_path = ""
     try:
@@ -64,8 +64,11 @@ where possible options include:\n\
         else:
             out_pcap = None
             output_f = None
-        DPIComponent(in_pcap, out_pcap)
-        SPIDComponent(in_pcap, out_pcap)
+        negative_f = open(negative_pcap_path, 'w+')
+        negative_pcap = dpkt.pcap.Writer(negative_f)
+        DPIComponent(in_pcap, negative_pcap, out_pcap)
+        negative_f.close()
+        SPIDComponent(negative_pcap_path, out_pcap)
 
 
 

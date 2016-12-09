@@ -30,7 +30,7 @@ def inet_to_str(inet):
         return socket.inet_ntop(socket.AF_INET6, inet)
 
 
-def DPIComponent(filepath, out_pcap=None):
+def DPIComponent(filepath, negative_pcap=None, out_pcap=None):
     global start_time
     start_time = time.time()
     print "%.3fs: starting read" % (time.time() - start_time)
@@ -39,10 +39,14 @@ def DPIComponent(filepath, out_pcap=None):
 
     torrent_streams = get_all_streams(pcap)
 
-    def apply_function(stream_id,ts,buffer):
-        if out_pcap is not None:
+    def apply_function(stream_id,ts,buffer, torrent):
+        if out_pcap is not None and torrent:
             out_pcap.writepkt(buffer, ts)
+        elif negative_pcap is not None and not torrent:
+            negative_pcap.writepkt(buffer, ts)
 
+    f.seek(0)
+    pcap = dpkt.pcap.Reader(f)
     iterate_over_streams(pcap, torrent_streams, apply_function)
 
 
@@ -95,10 +99,10 @@ def iterate_over_streams(pcap, streams, *apply_functions):
 
 
         stream_id = StreamId((ip.src, sport), (ip.dst, dport), protocol_str)
-        # Already identified this stream
-        if streams.has_key(stream_id):
+        cant_be_trashed, _ = PortFilter(pkt)
+        if cant_be_trashed:
             for fun in apply_functions:
-                fun(stream_id, timestamp, buf)
+                fun(stream_id, timestamp, buf, streams.has_key(stream_id))
 
 
 

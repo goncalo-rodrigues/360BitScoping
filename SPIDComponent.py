@@ -2,10 +2,11 @@ from ModelGenerator import split_pcap_into_streams, is_torrent_stream, model_pat
 import dpkt
 import os
 import numpy as np
+import shutil
 
 temp_dir = "tmp"
 def SPIDComponent(filepath, out_pcap=None):
-
+    shutil.rmtree(temp_dir, ignore_errors=True)
     split_pcap_into_streams(filepath, temp_dir)
 
     try:
@@ -18,9 +19,11 @@ def SPIDComponent(filepath, out_pcap=None):
         f = open(os.path.join(temp_dir, stream_file))
         result = is_torrent_stream(f, torrent_model)
         if result:
-            print("Found torrent!")
+            print("Found torrent! %s" % stream_file)
             if out_pcap is not None:
                 save_to_file(f, out_pcap)
+	else:
+	    print("Non-torrent traffic! %s" % stream_file)
         f.close()
 
 

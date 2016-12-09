@@ -140,7 +140,7 @@ def get_all_streams(pcap):
             continue
 
         result[stream_id] = output
-        print "New Stream %s" % str(stream_id)
+        print "New Stream %s, output: %s" % (str(stream_id), str(output))
     return result
 
 """

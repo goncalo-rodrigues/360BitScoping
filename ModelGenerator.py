@@ -80,7 +80,7 @@ def is_torrent_stream(stream_file, torrent_model):
     stream_fingerprints = normalize_model(generate_stream_model(stream_file))
     entropy = relative_entropy(stream_fingerprints, torrent_model)
     print entropy
-    return np.average(entropy) > threshold
+    return np.average(entropy) < threshold
     # stream_fingerprints = normalize_model(generate_stream_model(stream_file))
     # print stream_fingerprints[0]
     # for i in range(stream_fingerprints.shape[0]):

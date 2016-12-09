@@ -7,10 +7,12 @@ from scapy.all import *
 import os
 import thread
 from SPIDComponent import SPIDComponent
+from tabulate import tabulate
 
 SIZE_THRESHOLD_MB = 3000
 SIZE_SPLIT_MB = 500
 negative_pcap_path = "not_torrent.pcap"
+final_output = {'total_packets': 0, 'total_size': 0, 'info_by_ip': {}}
 def main(argv):
     output_file_path = ""
     try:
@@ -66,17 +68,47 @@ where possible options include:\n\
             output_f = None
         negative_f = open(negative_pcap_path, 'w+')
         negative_pcap = dpkt.pcap.Writer(negative_f)
-        DPIComponent(in_pcap, negative_pcap, out_pcap)
+        DPIComponent(in_pcap, final_output, negative_pcap, out_pcap)
         negative_f.close()
-        SPIDComponent(negative_pcap_path, out_pcap)
-
+        SPIDComponent(negative_pcap_path, final_output, out_pcap)
+        # if total traffic is lower than threshold value, then dont bother showing it in table
+        threshold = 5000
+        table_guilty = [(ip, final_output['info_by_ip'][ip]['downloaded'], final_output['info_by_ip'][ip]['uploaded'])
+                        for ip in final_output['info_by_ip'].keys()
+                        if final_output['info_by_ip'][ip]['downloaded'] + final_output['info_by_ip'][ip]['uploaded'] > threshold]
+        # sort by downloaded tarffic
+        table_guilty.sort(key=lambda x: -x[1])
+        table_guilty = [(x[0], sizeof_fmt(x[1]), sizeof_fmt(x[2])) for x in table_guilty]
+        if len(table_guilty) > 0:
+            print tabulate(table_guilty, ['IP Address', 'Downloaded traffic', 'Uploaded traffic']), '\n'
+        print "Total packets identified as torrent: %d" % final_output['total_packets']
+        print "Total torrent traffic size: %s" % sizeof_fmt(final_output['total_size'])
 
 
     try:
         output_f.close()
     except:
         pass
+
+
+from math import log
+unit_list = zip(['bytes', 'kB', 'MB', 'GB', 'TB', 'PB'], [0, 0, 1, 2, 2, 2])
+def sizeof_fmt(num):
+    """Human friendly file size"""
+    if num > 1:
+        exponent = min(int(log(num, 1024)), len(unit_list) - 1)
+        quotient = float(num) / 1024**exponent
+        unit, num_decimals = unit_list[exponent]
+        format_string = '{:.%sf} {}' % (num_decimals)
+        return format_string.format(quotient, unit)
+    if num == 0:
+        return '0 bytes'
+    if num == 1:
+        return '1 byte'
+
 if __name__ == "__main__":
     main(sys.argv[1:])
+
+
 
 

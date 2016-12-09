@@ -12,7 +12,7 @@ from subprocess import call
 import os
 
 start_time = 0
-
+total_size = 0
 np.set_printoptions(threshold=np.nan, precision=3)
 
 def inet_to_str(inet):
@@ -30,16 +30,34 @@ def inet_to_str(inet):
         return socket.inet_ntop(socket.AF_INET6, inet)
 
 
-def DPIComponent(filepath, negative_pcap=None, out_pcap=None):
-    global start_time
+def DPIComponent(filepath, final_output, negative_pcap=None, out_pcap=None):
+    global start_time, total_size
     start_time = time.time()
-    print "%.3fs: starting read" % (time.time() - start_time)
+    total_size = os.stat(filepath).st_size
     f = open(filepath)
     pcap = dpkt.pcap.Reader(f)
 
+    print "Executing DPI component"
     torrent_streams = get_all_streams(pcap)
+    update_progress(0.5)
 
     def apply_function(stream_id,ts,buffer, torrent):
+        if torrent:
+            size = len(dpkt.ethernet.Ethernet(buffer).data.data)
+            final_output['total_packets'] += 1
+            final_output['total_size'] += size
+            if final_output['info_by_ip'].has_key(stream_id.getSrcIp()):
+                final_output['info_by_ip'][stream_id.getSrcIp()]['uploaded'] += size
+            else:
+                final_output['info_by_ip'][stream_id.getSrcIp()] = {}
+                final_output['info_by_ip'][stream_id.getSrcIp()]['uploaded'] = size
+                final_output['info_by_ip'][stream_id.getSrcIp()]['downloaded'] = 0
+            if final_output['info_by_ip'].has_key(stream_id.getDstIp()):
+                final_output['info_by_ip'][stream_id.getDstIp()]['downloaded'] += size
+            else:
+                final_output['info_by_ip'][stream_id.getDstIp()] = {}
+                final_output['info_by_ip'][stream_id.getDstIp()]['downloaded'] = size
+                final_output['info_by_ip'][stream_id.getDstIp()]['uploaded'] = 0
         if out_pcap is not None and torrent:
             out_pcap.writepkt(buffer, ts)
         elif negative_pcap is not None and not torrent:
@@ -48,9 +66,9 @@ def DPIComponent(filepath, negative_pcap=None, out_pcap=None):
     f.seek(0)
     pcap = dpkt.pcap.Reader(f)
     iterate_over_streams(pcap, torrent_streams, apply_function)
+    update_progress(1)
+    print '\n'
 
-
-    print "%.3fs: done filtering" % (time.time() - start_time)
     # print "downloaded: %s" % str(downstreams_lengths)
     # print "uploaded: %s" % str(upstreams_lengths)
     f.close()
@@ -70,7 +88,10 @@ def merge_features(*args):
 
 # apply_function : (StreamId s_id) x (int timestamp) x (byte[] buf) => void
 def iterate_over_streams(pcap, streams, *apply_functions):
+    size_read = 0
     for timestamp, buf in pcap:
+        size_read += len(buf)
+        update_progress(0.5 + float(size_read) / (2*total_size))
         eth = dpkt.ethernet.Ethernet(buf)
         if not isinstance(eth.data, dpkt.ip.IP):
             continue
@@ -108,8 +129,11 @@ def iterate_over_streams(pcap, streams, *apply_functions):
 
 def get_all_streams(pcap):
     result = {}
+    size_read = 0
     # For each packet in the pcap process the contents
     for timestamp, buf in pcap:
+        size_read += len(buf)
+        update_progress(float(size_read) / (2*total_size))
         eth = dpkt.ethernet.Ethernet(buf)
         if not isinstance(eth.data, dpkt.ip.IP):
             continue
@@ -144,7 +168,7 @@ def get_all_streams(pcap):
             continue
 
         result[stream_id] = output
-        print "New Stream %s, output: %s" % (str(stream_id), str(output))
+        #print "New Stream %s" % str(stream_id)
     return result
 
 """
@@ -164,11 +188,11 @@ def is_torrent(pkt):
         #print output['sport'],output['dport']
         return False, {}
 
-    filters = [tracker_filter, HandhakeFilter, PieceFilter]
-
+    filters = [tracker_filter, HandhakeFilter]
     for filt in filters:
         torrent, output = filt(pkt)
         if torrent:
+            #print "Detected by %s" % filt.__name__
             return torrent, output
     return False, {}
 
@@ -220,3 +244,28 @@ class StreamId:
         return self.entities[1][1]
     def getProtocol(self):
         return self.protocol
+
+import time, sys
+
+# update_progress() : Displays or updates a console progress bar
+## Accepts a float between 0 and 1. Any int will be converted to a float.
+## A value under 0 represents a 'halt'.
+## A value at 1 or bigger represents 100%
+def update_progress(progress):
+    barLength = 10 # Modify this to change the length of the progress bar
+    status = ""
+    if isinstance(progress, int):
+        progress = float(progress)
+    if not isinstance(progress, float):
+        progress = 0
+        status = "error: progress var must be float\r\n"
+    if progress < 0:
+        progress = 0
+        status = "Halt...\r\n"
+    if progress >= 1:
+        progress = 1
+        status = "Done...\r\n"
+    block = int(round(barLength*progress))
+    text = "\rPercent: [{0}] {1}% {2}".format( "#"*block + "-"*(barLength-block), progress*100, status)
+    sys.stdout.write(text)
+    sys.stdout.flush()

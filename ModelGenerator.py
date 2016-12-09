@@ -46,7 +46,7 @@ def normalize_model(model):
 def split_pcap_into_streams(file_name, output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    call([splitter_name, "-i", bpf_filter, "-f", file_name,  "-o", output_dir, "-m", "connection"])
+    call([splitter_name, "-i", bpf_filter, "-f", file_name,  "-o", output_dir, "-m", "connection"], stdout=open(os.devnull, 'wb'))
 
 
 def generate_model(file_list):
@@ -79,7 +79,7 @@ def relative_entropy(observed_attr, known_attr):
 def is_torrent_stream(stream_file, torrent_model):
     stream_fingerprints = normalize_model(generate_stream_model(stream_file))
     entropy = relative_entropy(stream_fingerprints, torrent_model)
-    print entropy
+    #print entropy
     return np.average(entropy) < threshold
     # stream_fingerprints = normalize_model(generate_stream_model(stream_file))
     # print stream_fingerprints[0]

@@ -6,7 +6,7 @@ import binascii
 MIN_PORT = 0
 MAX_PORT = 1024
 
-#
+#You may add other ports here
 OTHER_KNOWN_PORTS = []
 
 #-----------------------------------------------------------------------

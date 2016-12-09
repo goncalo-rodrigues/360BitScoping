@@ -1,0 +1,38 @@
+--------
+Required
+--------
+
+Python v.2.7.6
+
+-----------------------
+Installing dependencies
+-----------------------
+
+pip install numpy
+apt-get install python-dpkt
+pip install tabulate
+
+
+---------------------------
+Model training instructions
+---------------------------
+
+./ModelGenerator.py <input pcap>
+
+Example:
+
+./ModelGenerator.py pcaps/im_100%_sure_this_only_has_torrent_packets.pcap
+
+NOTE: This is not required as the model is already trained. Use only if you
+want to train your own model.
+
+
+------------------
+Usage instructions
+------------------
+
+./360.py <input pcap> [-o <output pcap>]
+
+Example:
+
+./360.py pcaps/small_torrent.pcap -o output

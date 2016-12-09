@@ -3,7 +3,6 @@ import dpkt
 import socket
 import sys, getopt
 from DPIComponent import DPIComponent
-from scapy.all import *
 import os
 import thread
 from SPIDComponent import SPIDComponent

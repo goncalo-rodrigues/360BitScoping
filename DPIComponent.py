@@ -2,10 +2,8 @@ import dpkt
 import socket
 import sys, getopt
 import numpy as np
-from scapy.all import *
 from tracker_filter import tracker_filter, print_output
 from HandShakeTracker import HandhakeFilter
-from PieceFilter import PieceFilter
 from AttributeMeters import *
 from PortFilter import PortFilter
 from subprocess import call

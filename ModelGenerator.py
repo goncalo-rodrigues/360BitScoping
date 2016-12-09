@@ -70,7 +70,6 @@ def generate_model(file_list):
 
     np.save(model_pathname, model)
 
-    is_torrent_stream(open(os.path.join(model_dir, "in_the_middle-0003.pcap")), model)
     return model
 
 def relative_entropy(observed_attr, known_attr):

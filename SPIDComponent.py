@@ -29,10 +29,10 @@ def SPIDComponent(filepath, final_output, out_pcap=None):
             #print("Found torrent! %s" % stream_file)
             save_to_file(f, out_pcap, final_output)
 
-        else:
-            save_to_file(f, negative_pcap)
-            #print("Non-torrent traffic! %s" % stream_file)
-            f.close()
+        # else:
+        #     save_to_file(f, negative_pcap)
+        #     #print("Non-torrent traffic! %s" % stream_file)
+        f.close()
         files_processed += 1
     update_progress(1)
     print '\n'

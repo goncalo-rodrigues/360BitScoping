@@ -14,7 +14,7 @@ It will also output relevant information about the captured traffic such as:
 
 ## 2 Usage instructions
 
-./360.py <input pcap> [-o <output pcap>]
+./360.py \<input pcap\> [-o \<output pcap\>]
 
 Example:
 
